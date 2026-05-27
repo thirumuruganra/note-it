@@ -4,7 +4,7 @@
   "author": "Thirumurugan RA",
   "displayName": "Note It",
   "description": "Workspace scratchpad that opens automatically and captures notes before exit.",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "license": "GPL-3.0",
   "repository": {
     "type": "git",
