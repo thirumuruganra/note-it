@@ -4,36 +4,51 @@ import * as path from 'path';
 export const NOTE_FILE_NAME = 'NoteIt.md';
 export const DEFAULT_NOTE_CONTENT = '# NoteIt\n\n';
 
+export class NoteFileSecurityError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'NoteFileSecurityError';
+	}
+}
+
 export function getNoteFilePath(workspaceRoot: string): string {
 	return path.join(workspaceRoot, NOTE_FILE_NAME);
 }
 
 export function ensureNoteFile(workspaceRoot: string): string {
 	const noteFilePath = getNoteFilePath(workspaceRoot);
+	const existingEntry = getExistingNoteFileEntry(noteFilePath);
 
-	if (!fs.existsSync(noteFilePath)) {
+	if (!existingEntry) {
+		assertPathConfinedToWorkspace(workspaceRoot, noteFilePath);
 		fs.writeFileSync(noteFilePath, DEFAULT_NOTE_CONTENT, 'utf8');
+		return noteFilePath;
 	}
 
+	assertSafeExistingNoteFile(workspaceRoot, noteFilePath, existingEntry);
 	return noteFilePath;
 }
 
 export function readNoteContent(noteFilePath: string): string {
+	assertSafeExistingNoteFile(path.dirname(noteFilePath), noteFilePath);
 	return fs.readFileSync(noteFilePath, 'utf8');
 }
 
 export function writeNoteContent(noteFilePath: string, content: string): void {
+	assertSafeExistingNoteFile(path.dirname(noteFilePath), noteFilePath);
 	fs.writeFileSync(noteFilePath, content, 'utf8');
 }
 
 export function appendQuickNote(noteFilePath: string, note: string, now: Date = new Date()): void {
-	const existingContent = fs.existsSync(noteFilePath)
-		? fs.readFileSync(noteFilePath, 'utf8')
+	const existingEntry = getExistingNoteFileEntry(noteFilePath);
+	const existingContent = existingEntry
+		? (assertSafeExistingNoteFile(path.dirname(noteFilePath), noteFilePath, existingEntry), fs.readFileSync(noteFilePath, 'utf8'))
 		: '';
 	const leadingNewline = existingContent.length > 0 && !existingContent.endsWith('\n')
 		? '\n'
 		: '';
 
+	assertPathConfinedToWorkspace(path.dirname(noteFilePath), noteFilePath);
 	fs.appendFileSync(noteFilePath, formatQuickNote(note, now, leadingNewline), 'utf8');
 }
 
@@ -64,7 +79,7 @@ export function buildScratchpadHtml(initialContent: string, renderedContent: str
 		content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"
 	/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Scratchpad</title>
+		<title>scratchpad</title>
 	<style>
 		:root {
 			color-scheme: light dark;
@@ -254,4 +269,61 @@ function escapeHtml(value: string): string {
 
 function getNonce(): string {
 	return Math.random().toString(36).slice(2, 12);
+}
+
+function getExistingNoteFileEntry(noteFilePath: string): fs.Stats | undefined {
+	try {
+		return fs.lstatSync(noteFilePath);
+	} catch (error: unknown) {
+		if (isMissingPathError(error)) {
+			return undefined;
+		}
+
+		throw error;
+	}
+}
+
+function assertSafeExistingNoteFile(
+	workspaceRoot: string,
+	noteFilePath: string,
+	existingEntry: fs.Stats = getRequiredExistingNoteFileEntry(noteFilePath)
+): void {
+	if (existingEntry.isSymbolicLink()) {
+		throw new NoteFileSecurityError('NoteIt refused to use NoteIt.md because it is a symbolic link.');
+	}
+
+	if (!existingEntry.isFile()) {
+		throw new NoteFileSecurityError('NoteIt refused to use NoteIt.md because it is not a regular file.');
+	}
+
+	assertPathConfinedToWorkspace(workspaceRoot, fs.realpathSync(noteFilePath));
+}
+
+function getRequiredExistingNoteFileEntry(noteFilePath: string): fs.Stats {
+	const existingEntry = getExistingNoteFileEntry(noteFilePath);
+	if (!existingEntry) {
+		throw new NoteFileSecurityError('NoteIt could not find NoteIt.md.');
+	}
+
+	return existingEntry;
+}
+
+function assertPathConfinedToWorkspace(workspaceRoot: string, filePath: string): void {
+	const resolvedWorkspaceRoot = normalizePath(fs.realpathSync(workspaceRoot));
+	const resolvedFilePath = normalizePath(path.resolve(filePath));
+	const relativePath = path.relative(resolvedWorkspaceRoot, resolvedFilePath);
+
+	if (relativePath === '' || (!relativePath.startsWith('..') && !path.isAbsolute(relativePath))) {
+		return;
+	}
+
+	throw new NoteFileSecurityError('NoteIt refused to use NoteIt.md because it resolves outside the workspace root.');
+}
+
+function normalizePath(filePath: string): string {
+	return process.platform === 'win32' ? filePath.toLowerCase() : filePath;
+}
+
+function isMissingPathError(error: unknown): error is NodeJS.ErrnoException {
+	return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT');
 }

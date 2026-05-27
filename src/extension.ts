@@ -3,6 +3,7 @@ import {
 	appendQuickNote,
 	buildScratchpadHtml,
 	ensureNoteFile,
+	NoteFileSecurityError,
 	readNoteContent,
 	writeNoteContent,
 } from './noteIt';
@@ -17,8 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const workspaceRoot = getPrimaryWorkspaceRoot();
 	if (workspaceRoot) {
-		const noteFilePath = ensureNoteFile(workspaceRoot);
-		void createOrRevealScratchpad(noteFilePath, panel, context).then((createdPanel) => {
+		void openScratchpadForWorkspace(workspaceRoot, panel, context).then((createdPanel) => {
 			panel = createdPanel;
 		});
 	}
@@ -34,8 +34,15 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const noteFilePath = ensureNoteFile(commandWorkspaceRoot);
-		appendQuickNote(noteFilePath, quickNote);
+		let noteFilePath: string;
+		try {
+			noteFilePath = ensureNoteFile(commandWorkspaceRoot);
+			appendQuickNote(noteFilePath, quickNote);
+		} catch (error: unknown) {
+			handleNoteFileError(error);
+			return;
+		}
+
 		await vscode.commands.executeCommand('workbench.action.closeWindow');
 	});
 
@@ -44,8 +51,31 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {}
 
+async function openScratchpadForWorkspace(
+	workspaceRoot: string,
+	existingPanel: vscode.WebviewPanel | undefined,
+	context: vscode.ExtensionContext
+): Promise<vscode.WebviewPanel | undefined> {
+	try {
+		const noteFilePath = ensureNoteFile(workspaceRoot);
+		return await createOrRevealScratchpad(noteFilePath, existingPanel, context);
+	} catch (error: unknown) {
+		handleNoteFileError(error);
+		return undefined;
+	}
+}
+
 function getPrimaryWorkspaceRoot(): string | undefined {
 	return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+function handleNoteFileError(error: unknown): void {
+	if (error instanceof NoteFileSecurityError) {
+		void vscode.window.showErrorMessage(error.message);
+		return;
+	}
+
+	throw error;
 }
 
 async function createOrRevealScratchpad(

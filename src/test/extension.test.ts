@@ -10,6 +10,7 @@ import { stripPreviewTimestamps } from '../extension';
 import {
 	DEFAULT_NOTE_CONTENT,
 	NOTE_FILE_NAME,
+	NoteFileSecurityError,
 	appendQuickNote,
 	buildScratchpadHtml,
 	ensureNoteFile,
@@ -26,6 +27,22 @@ suite('Extension Test Suite', () => {
 
 	teardown(() => {
 		fs.rmSync(tempDir, { recursive: true, force: true });
+	});
+
+	test('ensureNoteFile rejects NoteIt.md symlinks that resolve outside the workspace root', () => {
+		const outsideFilePath = path.join(os.tmpdir(), `note-it-outside-${Date.now()}.md`);
+		fs.writeFileSync(outsideFilePath, 'outside content', 'utf8');
+		fs.symlinkSync(outsideFilePath, path.join(tempDir, NOTE_FILE_NAME));
+
+		assert.throws(
+			() => ensureNoteFile(tempDir),
+			(error: unknown) =>
+				error instanceof NoteFileSecurityError &&
+				error.message.includes('symbolic link')
+		);
+		assert.strictEqual(fs.readFileSync(outsideFilePath, 'utf8'), 'outside content');
+
+		fs.rmSync(outsideFilePath, { force: true });
 	});
 
 	test('ensureNoteFile creates NoteIt.md with default content', () => {
@@ -63,6 +80,22 @@ suite('Extension Test Suite', () => {
 			fs.readFileSync(noteFilePath, 'utf8'),
 			'# NoteIt\n- [2026-05-27 15:20] Finish release notes\n'
 		);
+	});
+
+	test('appendQuickNote rejects NoteIt.md symlinks before appending', () => {
+		const outsideFilePath = path.join(os.tmpdir(), `note-it-append-${Date.now()}.md`);
+		fs.writeFileSync(outsideFilePath, 'outside content', 'utf8');
+		fs.symlinkSync(outsideFilePath, path.join(tempDir, NOTE_FILE_NAME));
+
+		assert.throws(
+			() => appendQuickNote(path.join(tempDir, NOTE_FILE_NAME), 'Do not write here'),
+			(error: unknown) =>
+				error instanceof NoteFileSecurityError &&
+				error.message.includes('symbolic link')
+		);
+		assert.strictEqual(fs.readFileSync(outsideFilePath, 'utf8'), 'outside content');
+
+		fs.rmSync(outsideFilePath, { force: true });
 	});
 
 	test('stripPreviewTimestamps hides quick-note timestamps in preview content only', () => {
