@@ -110,7 +110,7 @@ suite('Extension Test Suite', () => {
 		const html = buildScratchpadHtml('<tag>&note', '<h1>Preview</h1>');
 
 		assert.ok(html.includes('&lt;tag&gt;&amp;note'));
-		assert.ok(html.includes('<title>scratchpad</title>'));
+		assert.ok(html.includes('<title>Scratchpad</title>'));
 		assert.ok(html.includes('<article id="note-preview" class="preview"><h1>Preview</h1></article>'));
 		assert.ok(html.includes("type: 'update-note'"));
 		assert.ok(html.includes("type !== 'rendered-note'"));

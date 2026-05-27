@@ -1,10 +1,10 @@
 {
-  "name": "note-it",
+  "name": "noteit",
   "publisher": "thirumuruganra",
   "author": "Thirumurugan RA",
   "displayName": "Note It",
   "description": "Workspace scratchpad that opens automatically and captures notes before exit.",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "license": "GPL-3.0",
   "repository": {
     "type": "git",

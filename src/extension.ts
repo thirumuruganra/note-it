@@ -9,7 +9,7 @@ import {
 } from './noteIt';
 
 const NOTE_PANEL_VIEW_TYPE = 'noteItPopup';
-const NOTE_PANEL_TITLE = 'scratchpad';
+const NOTE_PANEL_TITLE = 'Scratchpad';
 const NOTE_AND_EXIT_COMMAND = 'noteit.noteAndExit';
 const NOTE_PROMPT = 'What are you working on next?';
 
