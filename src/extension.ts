@@ -87,6 +87,7 @@ async function createOrRevealScratchpad(
 	const renderedContent = await renderMarkdownContent(noteContent);
 
 	if (existingPanel) {
+		existingPanel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'icon.png');
 		existingPanel.webview.html = buildScratchpadHtml(noteContent, renderedContent);
 		existingPanel.reveal(vscode.ViewColumn.Active);
 		return existingPanel;
@@ -99,6 +100,7 @@ async function createOrRevealScratchpad(
 		{ enableScripts: true }
 	);
 
+	panel.iconPath = vscode.Uri.joinPath(context.extensionUri, 'icon.png');
 	panel.webview.html = buildScratchpadHtml(noteContent, renderedContent);
 
 	const messageSubscription = panel.webview.onDidReceiveMessage(async (message: unknown) => {
