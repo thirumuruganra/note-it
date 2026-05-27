@@ -6,6 +6,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-27
+
+### Changed
+
+- Scratchpad window now shows the NoteIt logo.
+
 ## [1.0.0] - 2026-05-27
 
 ### Added
