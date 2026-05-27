@@ -79,7 +79,7 @@ export function buildScratchpadHtml(initialContent: string, renderedContent: str
 		content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';"
 	/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>scratchpad</title>
+		<title>Scratchpad</title>
 	<style>
 		:root {
 			color-scheme: light dark;
