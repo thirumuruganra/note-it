@@ -1,8 +1,10 @@
 # NoteIt
 
-<p align="center">
-	<img src="./icon.png" alt="NoteIt icon" width="128" height="128">
-</p>
+<div align="center">
+
+![Note It Logo](./icon.png)
+
+</div>
 
 NoteIt is a VS Code extension that treats a workspace-root `NoteIt.md` file as a persistent scratchpad. When a workspace finishes loading, the extension ensures that file exists and opens it in a dedicated webview panel titled `Scratchpad`.
 
